@@ -10,6 +10,11 @@ npm install
 npm run serve
 ```
 
+### Add ENV and Setup
+```
+VUE_APP_API_URL=http://localhost:8000/api/
+```
+
 ### Compiles and minifies for production
 ```
 npm run build
