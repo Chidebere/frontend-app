@@ -1,0 +1,224 @@
+<template>
+  <div class="login mt-5">
+    <div class="content-wrapper">
+
+      <!-- Main content -->
+      <section class="content">
+        <div class="container">
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">My Profile</h3>
+            </div>
+
+            <!-- /.card-header -->
+            <div class="card-body p-0">
+              <div class="row">
+                <div class="col-xl-3 col-lg-3 col-md-3 col-sm-12 col-12">
+                  <b-card no-body>
+                    <div class="card-body">
+                      <div class="profile-header-container">
+                        <div class="profile-header-img" align="center">
+                          <img v-if="user.pic" :src="'/storage/profile/' + user.pic" class="rounded-circle" alt="..." width="150px;">
+                          <img v-else class="rounded-circle" src="/assets/img/user.png" width="150px;" />
+                        </div>
+                      </div>
+                      <b-card-body>
+                        <b-card-title style="font-weight: 600; font-size: 17px;">{{user.name}}</b-card-title>
+                        <hr>
+                        <b-card-sub-title style="font-size: 1.2em; font-weight: 700;" v-if="user.pvt == 1">
+                          <b-button @click="switchStatusState(user.pvt)" block variant="info">Private</b-button>
+                        </b-card-sub-title>
+                        <b-card-sub-title style="font-size: 1.2em; font-weight: 700;" v-else>
+                          <b-button @click="switchStatusState(user.pvt)" block variant="success">Public</b-button>
+                        </b-card-sub-title>
+                      </b-card-body>
+                    </div>
+
+                    <b-list-group flush class="ml-2 mr-2">
+                      <router-link to="/panel/profile/upload" class="mb-2 btn btn-info">
+                        <b-button block variant="warning">Upload Picture</b-button>
+                      </router-link>
+                      <router-link to="/panel/profile" class="mb-2 btn btn-info">
+                        <b-button block variant="warning">Edit My Profile</b-button>
+                      </router-link>
+                      <router-link to="/panel/profile/change-password" class=" btn btn-info">
+                        <b-button block variant="warning">Change Password</b-button>
+                      </router-link>
+                    </b-list-group>
+
+                    <b-card-footer class="mt-4">
+                      <b-button @click="logout" block variant="danger">Sign Out</b-button>
+                    </b-card-footer>
+
+                  </b-card>
+                </div>
+                <div class="col-xl-9 col-lg-9 col-md-9 col-sm-12 col-12">
+
+                  <div class="card m-2">
+                    <div class="card-header">
+                      Edit My Profile
+                    </div>
+
+                    <!-- /.card-header -->
+                    <div class="card-body col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+
+                      <b-form @submit="onSubmit" @reset="onReset">
+
+                        <b-form-group id="input-group-2" label="Full Name:" label-for="input-2">
+                          <b-form-input id="input-2" v-model="form.name" placeholder="Enter name" required></b-form-input>
+                        </b-form-group>
+
+                        <b-form-group id="input-group-2" label="Username:" label-for="input-2">
+                          <b-form-input id="input-2" v-model="form.username" placeholder="Enter username" required></b-form-input>
+                        </b-form-group>
+
+                        <b-form-group id="input-group-1" label="Email address:" label-for="input-1">
+                          <b-form-input id="input-1" v-model="form.email" type="email" placeholder="Enter email" required></b-form-input>
+                        </b-form-group>
+
+                        <b-form-group id="input-group-2" label="Bio:" label-for="input-2">
+                          <b-form-textarea id="textarea-no-resize" placeholder="Bio" v-model="form.bio" rows="3" no-resize required></b-form-textarea>
+                        </b-form-group>
+
+                        <b-button type="submit" class="mr-2" variant="primary">Save</b-button>
+                        <b-button type="reset" variant="danger">Reset</b-button>
+                      </b-form>
+
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+            <!-- /.card-body -->
+          </div>
+          <!-- /.card -->
+        </div><!-- /.container-fluid -->
+      </section>
+      <!-- /.content -->
+    </div>
+
+  </div>
+</template>
+
+
+
+<script>
+import { mapGetters, mapActions } from "vuex";
+import axios from "axios";
+
+export default {
+  namespaced: true,
+  // props: ['username'],
+  data: function () {
+    return {
+      form: {
+        name: "",
+        username: "",
+        email: "",
+        bio: "",
+      },
+    };
+  },
+  computed: {
+    ...mapGetters("auth", ["user"]),
+  },
+
+  mounted() {
+    if (localStorage.getItem("authToken")) {
+      this.getUserData();
+      this.loadData();
+    }
+  },
+
+  methods: {
+    onSubmit(event) {
+      event.preventDefault();
+      // alert(JSON.stringify(this.form))
+
+      const formData = new FormData();
+      formData.append("name", this.form.name);
+      formData.append("username", this.form.username);
+      formData.append("email", this.form.email);
+      formData.append("bio", this.form.bio);
+      formData.append("userId", this.user.id);
+
+      axios
+        .post(process.env.VUE_APP_API_URL + "updateMyProfile", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        .then((response) => {
+          console.log(response);
+          this.makeToast();
+          this.getUserData();
+        })
+        .catch((error) => {
+          console.log(error);
+          this.$message({
+            message: "Your update not successful",
+            type: "error",
+            offset: 40,
+            duration: 5000,
+          });
+        });
+    },
+
+    switchStatusState(pvt) {
+      axios
+        .get(process.env.VUE_APP_API_URL + "updateStatus", {
+          params: {
+            userId: this.user.id,
+            pvtStatus: pvt,
+          },
+        })
+        .then((response) => {
+          this.makeToast2();
+          this.getUserData();
+          console.log(response);
+        })
+        .catch(function (error) {
+          console.log(error.message);
+        });
+    },
+
+    loadData() {
+      this.form.name = this.user.name;
+      this.form.username = this.user.username;
+      this.form.email = this.user.email;
+      this.form.bio = this.user.bio;
+    },
+
+    onReset(event) {
+      event.preventDefault();
+      // Reset our form values
+      this.form.name = "";
+      this.form.username = "";
+      this.form.email = "";
+      this.form.bio = "";
+    },
+
+    makeToast() {
+      this.$bvToast.toast("Update was successful", {
+        title: "Success",
+        variant: "success",
+        solid: true,
+      });
+    },
+    makeToast2() {
+      this.$bvToast.toast("Status changed", {
+        title: "Success",
+        variant: "success",
+        solid: true,
+      });
+    },
+
+    ...mapActions("auth", ["sendLogoutRequest", "getUserData"]),
+
+    logout() {
+      this.sendLogoutRequest();
+      this.$router.push("/");
+    },
+  },
+};
+</script>
